@@ -1,0 +1,4 @@
+[submodule "js"]
+	path = js
+	url = git@github.com:folex/pnpm-workspace-monorepo.git
+	branch = libp2p-latest
