@@ -54,10 +54,20 @@ use std::error::Error;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let local_key = identity::Keypair::generate_ed25519();
+    env_logger::builder()
+        .format_timestamp_millis()
+        .filter_level(log::LevelFilter::Trace)
+        // .filter(Some("async_std"), log::LevelFilter::Info)
+        // .filter(Some("async_io"), log::LevelFilter::Info)
+        // .filter(Some("polling"), log::LevelFilter::Info)
+        .try_init()
+        .ok();
+
+    let local_key = &[8, 1, 18, 64, 81, 107, 33, 74, 135, 92, 171, 21, 15, 39, 31, 221, 116, 221, 34, 158, 182, 84, 108, 41, 35, 39, 195, 154, 133, 52, 27, 134, 241, 33, 55, 78, 71, 35, 227, 52, 204, 130, 190, 113, 40, 174, 252, 92, 207, 182, 133, 67, 1, 22, 144, 22, 77, 154, 16, 24, 113, 231, 146, 173, 157, 231, 132, 123];
+    let local_key = identity::Keypair::from_protobuf_encoding(local_key)?;
     let public = local_key.public();
     let local_peer_id = PeerId::from(public.clone());
-    println!("Local peer id: {local_peer_id:?}");
+    println!("Local peer id: {local_peer_id}");
 
     let transport = libp2p::tokio_development_transport(local_key)?;
 
@@ -86,7 +96,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     loop {
         match swarm.select_next_some().await {
-            SwarmEvent::NewListenAddr { address, .. } => println!("Listening on {address:?}"),
+            SwarmEvent::NewListenAddr { address, .. } => println!("\nListening on {address}/p2p/{local_peer_id}\n"),
             SwarmEvent::Behaviour(event) => println!("{event:?}"),
             _ => {}
         }
