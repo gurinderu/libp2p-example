@@ -39,31 +39,42 @@
 //!
 //! The two nodes establish a connection, negotiate the ping protocol
 //! and begin pinging each other.
-use futures::prelude::*;
-use libp2p::{
-    identity,
-    swarm::{NetworkBehaviour, Swarm, SwarmEvent}, Multiaddr, PeerId,
-    identify::Config as IdentifyConfig,
-    identify::Behaviour as Identify,
-    ping::Behaviour as Ping,
-    ping::Config as PingConfig,
-};
-
 use std::error::Error;
 
+use futures::prelude::*;
+use libp2p::{
+    identify::Behaviour as Identify,
+    identify::Config as IdentifyConfig,
+    identity,
+    Multiaddr,
+    PeerId,
+    ping::Behaviour as Ping,
+    ping::Config as PingConfig,
+    request_response, swarm::{NetworkBehaviour, Swarm, SwarmEvent},
+};
+use libp2p::request_response::ProtocolSupport;
+
+use crate::protocol::{ParticleCodec, ParticleProtocol};
+
+mod protocol;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     env_logger::builder()
         .format_timestamp_millis()
-        .filter_level(log::LevelFilter::Trace)
+        .filter_level(log::LevelFilter::Info)
         // .filter(Some("async_std"), log::LevelFilter::Info)
         // .filter(Some("async_io"), log::LevelFilter::Info)
         // .filter(Some("polling"), log::LevelFilter::Info)
         .try_init()
         .ok();
 
-    let local_key = &[8, 1, 18, 64, 81, 107, 33, 74, 135, 92, 171, 21, 15, 39, 31, 221, 116, 221, 34, 158, 182, 84, 108, 41, 35, 39, 195, 154, 133, 52, 27, 134, 241, 33, 55, 78, 71, 35, 227, 52, 204, 130, 190, 113, 40, 174, 252, 92, 207, 182, 133, 67, 1, 22, 144, 22, 77, 154, 16, 24, 113, 231, 146, 173, 157, 231, 132, 123];
+    let local_key = &[
+        8, 1, 18, 64, 81, 107, 33, 74, 135, 92, 171, 21, 15, 39, 31, 221, 116, 221, 34, 158, 182,
+        84, 108, 41, 35, 39, 195, 154, 133, 52, 27, 134, 241, 33, 55, 78, 71, 35, 227, 52, 204,
+        130, 190, 113, 40, 174, 252, 92, 207, 182, 133, 67, 1, 22, 144, 22, 77, 154, 16, 24, 113,
+        231, 146, 173, 157, 231, 132, 123,
+    ];
     let local_key = identity::Keypair::from_protobuf_encoding(local_key)?;
     let public = local_key.public();
     let local_peer_id = PeerId::from(public.clone());
@@ -71,13 +82,20 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let transport = libp2p::tokio_development_transport(local_key)?;
 
-    let identify = Identify::new(
-        IdentifyConfig::new("/fluence/particle/2.0.0".to_owned(), public.clone()));
+    let identify = Identify::new(IdentifyConfig::new(
+        "/fluence/particle/2.0.0".to_owned(),
+        public.clone(),
+    ));
     let ping = Ping::new(PingConfig::new());
 
     let behaviour = Behaviour {
         ping: ping,
         identify: identify,
+        request_response: request_response::RequestResponse::new(
+            ParticleCodec(),
+            std::iter::once((ParticleProtocol(), ProtocolSupport::Full)),
+            Default::default(),
+        ),
     };
 
     let mut swarm = Swarm::with_tokio_executor(transport, behaviour, local_peer_id);
@@ -96,7 +114,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     loop {
         match swarm.select_next_some().await {
-            SwarmEvent::NewListenAddr { address, .. } => println!("\nListening on {address}/p2p/{local_peer_id}\n"),
+            SwarmEvent::NewListenAddr { address, .. } => {
+                println!("\nListening on {address}/p2p/{local_peer_id}\n")
+            }
             SwarmEvent::Behaviour(event) => println!("{event:?}"),
             _ => {}
         }
@@ -111,4 +131,5 @@ async fn main() -> Result<(), Box<dyn Error>> {
 struct Behaviour {
     ping: Ping,
     identify: Identify,
+    request_response: request_response::RequestResponse<ParticleCodec>,
 }
