@@ -55,11 +55,11 @@ use std::error::Error;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let local_key = identity::Keypair::generate_ed25519();
-    let public =  local_key.public();
+    let public = local_key.public();
     let local_peer_id = PeerId::from(public.clone());
     println!("Local peer id: {local_peer_id:?}");
 
-    let transport = libp2p::development_transport(local_key).await?;
+    let transport = libp2p::tokio_development_transport(local_key)?;
 
     let identify = Identify::new(
         IdentifyConfig::new("/fluence/particle/2.0.0".to_owned(), public.clone()));
@@ -70,11 +70,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
         identify: identify,
     };
 
-    let mut swarm = Swarm::with_async_std_executor(transport, behaviour, local_peer_id);
+    let mut swarm = Swarm::with_tokio_executor(transport, behaviour, local_peer_id);
 
     // Tell the swarm to listen on all interfaces and a random, OS-assigned
     // port.
-    swarm.listen_on("/ip4/0.0.0.0/tcp/0".parse()?)?;
+    swarm.listen_on("/ip4/0.0.0.0/tcp/4310/ws".parse()?)?;
 
     // Dial the peer identified by the multi-address given as the second
     // command-line argument, if any.
