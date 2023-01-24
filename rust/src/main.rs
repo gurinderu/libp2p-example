@@ -39,23 +39,38 @@
 //!
 //! The two nodes establish a connection, negotiate the ping protocol
 //! and begin pinging each other.
-
 use futures::prelude::*;
 use libp2p::{
-    identity, ping,
-    swarm::{keep_alive, NetworkBehaviour, Swarm, SwarmEvent}, Multiaddr, PeerId,
+    identity,
+    swarm::{NetworkBehaviour, Swarm, SwarmEvent}, Multiaddr, PeerId,
+    identify::Config as IdentifyConfig,
+    identify::Behaviour as Identify,
+    ping::Behaviour as Ping,
+    ping::Config as PingConfig,
 };
+
 use std::error::Error;
+
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let local_key = identity::Keypair::generate_ed25519();
-    let local_peer_id = PeerId::from(local_key.public());
+    let public =  local_key.public();
+    let local_peer_id = PeerId::from(public.clone());
     println!("Local peer id: {local_peer_id:?}");
 
     let transport = libp2p::development_transport(local_key).await?;
 
-    let mut swarm = Swarm::with_async_std_executor(transport, Behaviour::default(), local_peer_id);
+    let identify = Identify::new(
+        IdentifyConfig::new("/fluence/particle/2.0.0".to_owned(), public.clone()));
+    let ping = Ping::new(PingConfig::new());
+
+    let behaviour = Behaviour {
+        ping: ping,
+        identify: identify,
+    };
+
+    let mut swarm = Swarm::with_async_std_executor(transport, behaviour, local_peer_id);
 
     // Tell the swarm to listen on all interfaces and a random, OS-assigned
     // port.
@@ -82,8 +97,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
 ///
 /// For illustrative purposes, this includes the [`KeepAlive`](behaviour::KeepAlive) behaviour so a continuous sequence of
 /// pings can be observed.
-#[derive(NetworkBehaviour, Default)]
+#[derive(NetworkBehaviour)]
 struct Behaviour {
-    keep_alive: keep_alive::Behaviour,
-    ping: ping::Behaviour,
+    ping: Ping,
+    identify: Identify,
 }
