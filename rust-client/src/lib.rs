@@ -11,9 +11,10 @@ use libp2p::{identity, mplex, noise, swarm::{Swarm, SwarmEvent}, Multiaddr, Peer
 
 use libp2p::core::transport::upgrade;
 use libp2p::wasm_ext::ffi::websocket_transport;
-use log::info;
+use log::{info, Level};
 use particle_protocol::Particle;
 use wasm_bindgen_futures::spawn_local;
+use wasm_logger::MessageLocation;
 
 use crate::behaviour::sender::ParticleData;
 use crate::behaviour::ClientBehaviour;
@@ -33,7 +34,9 @@ cfg_if::cfg_if! {
 #[wasm_bindgen(start)]
 pub fn main() {
     panic::set_hook(Box::new(console_error_panic_hook::hook));
-    wasm_logger::init(wasm_logger::Config::default());
+    let config = wasm_logger::Config::new(Level::Trace);
+    wasm_logger::init(config);
+    tracing_wasm::set_as_global_default();
 }
 
 #[wasm_bindgen]
