@@ -102,7 +102,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // Tell the swarm to listen on all interfaces and a random, OS-assigned
     // port.
-    swarm.listen_on("/ip4/0.0.0.0/tcp/4310/ws".parse()?)?;
+    swarm.listen_on("/ip4/0.0.0.0/tcp/9999/ws".parse()?)?;
 
     // Dial the peer identified by the multi-address given as the second
     // command-line argument, if any.

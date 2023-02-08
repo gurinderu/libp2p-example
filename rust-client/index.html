@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="utf-8"/>
+    <title>hello-wasm example</title>
+</head>
+<body>
+<script type="module">
+    import init from "./pkg/rust_client.js";
+    import * as wasm from "./pkg/rust_client.js";
+
+
+    async function program() {
+        await init();
+
+        let connection = await wasm.connect("/ip4/0.0.0.0/tcp/9999/ws");
+
+        await connection.send("123");
+
+    }
+
+    program();
+</script>
+</body>
+</html>
