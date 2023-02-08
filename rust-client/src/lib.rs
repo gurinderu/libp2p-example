@@ -1,24 +1,22 @@
 mod behaviour;
 
-use std::{panic};
 use futures::channel::mpsc;
-use futures::channel::mpsc::{Sender};
+use futures::channel::mpsc::Sender;
+use std::panic;
+use std::str::FromStr;
 use wasm_bindgen::prelude::*;
 
 use futures::prelude::*;
-use libp2p::{
-    identity, mplex, noise,
-    swarm::{Swarm, SwarmEvent},
-    Multiaddr, PeerId, Transport,
-};
+use libp2p::{identity, mplex, noise, swarm::{Swarm, SwarmEvent}, Multiaddr, PeerId, Transport};
 
 use libp2p::core::transport::upgrade;
 use libp2p::wasm_ext::ffi::websocket_transport;
 use log::info;
 use particle_protocol::Particle;
-use wasm_rs_async_executor::single_threaded as executor;
+use wasm_bindgen_futures::spawn_local;
 
-use crate::behaviour::{ClientBehaviour};
+use crate::behaviour::sender::ParticleData;
+use crate::behaviour::ClientBehaviour;
 
 #[wasm_bindgen]
 extern "C" {
@@ -32,7 +30,6 @@ cfg_if::cfg_if! {
     }
 }
 
-
 #[wasm_bindgen(start)]
 pub fn main() {
     panic::set_hook(Box::new(console_error_panic_hook::hook));
@@ -40,22 +37,25 @@ pub fn main() {
 }
 
 #[wasm_bindgen]
+#[derive()]
 pub struct Client {
-    tx: Sender<Particle>,
+    tx: Sender<ParticleData>,
     peed_id: PeerId,
 }
 
 #[wasm_bindgen]
 impl Client {
-    pub fn send(&mut self, data: String) -> Result<(), JsValue> {
+    pub fn send(&mut self, to: String, data: String) -> Result<(), JsValue> {
         info!("Call send for {} {}", data, self.peed_id);
         let mut particle = Particle::default();
         particle.init_peer_id = self.peed_id;
-        let _ = self.tx.send(particle);
+        particle.data = data.into_bytes();
+        let to = PeerId::from_str(to.as_str()).expect("Could not parse id");
+        let data = ParticleData { to, particle };
+        let _ = self.tx.send(data);
         Ok(())
     }
 }
-
 
 #[wasm_bindgen]
 pub async fn connect(address: &str) -> Result<Client, JsValue> {
@@ -84,9 +84,21 @@ pub async fn connect(address: &str) -> Result<Client, JsValue> {
     // port.
     let addr: Multiaddr = address.parse().expect("Could not parse address");
     swarm.dial(addr).expect("Could not connect to peer");
-    executor::spawn(async move {
+    spawn_local(async move {
         loop {
             match swarm.select_next_some().await {
+                SwarmEvent::ConnectionEstablished {
+                    peer_id,
+                    endpoint: _,
+                    num_established: _,
+                    concurrent_dial_errors: _,
+                } => log::info!("Connection to peer {} established", peer_id),
+                SwarmEvent::ConnectionClosed {
+                    peer_id,
+                    endpoint: _,
+                    num_established: _,
+                    cause: _,
+                } => log::info!("Connection to peer {} closed", peer_id),
                 SwarmEvent::Behaviour(event) => log::info!("SwarmEvent::Behaviour {event:?}"),
                 event => log::info!("SwarmEvent::other {event:?}"),
             }

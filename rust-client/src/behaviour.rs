@@ -1,8 +1,8 @@
+use crate::behaviour::sender::ParticleData;
 use futures::channel::mpsc;
-use libp2p::{identify, ping};
 use libp2p::core::PublicKey;
 use libp2p::swarm::{keep_alive, NetworkBehaviour};
-
+use libp2p::{identify, ping};
 
 #[derive(NetworkBehaviour)]
 pub struct ClientBehaviour {
@@ -12,9 +12,8 @@ pub struct ClientBehaviour {
     identify: identify::Behaviour,
 }
 
-
 impl ClientBehaviour {
-    pub fn new(public_key: PublicKey, rx: mpsc::Receiver<particle_protocol::Particle>) -> Self {
+    pub fn new(public_key: PublicKey, rx: mpsc::Receiver<ParticleData>) -> Self {
         let ping = ping::Behaviour::default();
         let keep_alive = keep_alive::Behaviour::default();
         let sender = sender::Behaviour::new(rx);
@@ -33,28 +32,33 @@ impl ClientBehaviour {
 }
 
 pub mod sender {
-    use std::collections::VecDeque;
     use futures::channel::mpsc;
-    use std::task::{Context, Poll};
     use futures::channel::oneshot;
     use futures::StreamExt;
+    use libp2p::swarm::{
+        NetworkBehaviour, NetworkBehaviourAction, NotifyHandler, OneShotHandler, PollParameters,
+    };
     use libp2p::PeerId;
-    use libp2p::swarm::{NetworkBehaviour, NetworkBehaviourAction, NotifyHandler, OneShotHandler, PollParameters};
-    use particle_protocol::{ProtocolConfig, HandlerMessage, CompletionChannel};
+    use particle_protocol::{CompletionChannel, HandlerMessage, ProtocolConfig};
+    use std::collections::VecDeque;
+    use std::task::{Context, Poll};
 
-    type SwarmEventType = NetworkBehaviourAction<
-        (),
-        OneShotHandler<ProtocolConfig, HandlerMessage, HandlerMessage>,
-    >;
+    type SwarmEventType =
+        NetworkBehaviourAction<(), OneShotHandler<ProtocolConfig, HandlerMessage, HandlerMessage>>;
+
+    pub struct ParticleData {
+        pub to: PeerId,
+        pub particle: particle_protocol::Particle,
+    }
 
     pub struct Behaviour {
-        rx: mpsc::Receiver<particle_protocol::Particle>,
+        rx: mpsc::Receiver<ParticleData>,
         events: VecDeque<SwarmEventType>,
         pub(super) protocol_config: ProtocolConfig,
     }
 
     impl Behaviour {
-        pub fn new(rx: mpsc::Receiver<particle_protocol::Particle>) -> Self {
+        pub fn new(rx: mpsc::Receiver<ParticleData>) -> Self {
             Behaviour {
                 rx,
                 events: VecDeque::new(),
@@ -71,15 +75,23 @@ pub mod sender {
             self.protocol_config.clone().into()
         }
 
-
-        fn poll(&mut self, cx: &mut Context<'_>, _params: &mut impl PollParameters) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ConnectionHandler>> {
-            while let Poll::Ready(Some(particle)) = self.rx.poll_next_unpin(cx) {
+        fn poll(
+            &mut self,
+            cx: &mut Context<'_>,
+            _params: &mut impl PollParameters,
+        ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ConnectionHandler>> {
+            while let Poll::Ready(Some(data)) = self.rx.poll_next_unpin(cx) {
                 let (outlet, _inlet) = oneshot::channel();
-                self.events.push_back(NetworkBehaviourAction::NotifyHandler {
-                    peer_id: PeerId::random(),//to.peer_id,
-                    handler: NotifyHandler::Any,
-                    event: HandlerMessage::OutParticle(particle, CompletionChannel::Oneshot(outlet)),
-                })
+                self.events
+                    .push_back(NetworkBehaviourAction::NotifyHandler {
+                        peer_id: data.to,
+                        handler: NotifyHandler::Any,
+                        event: HandlerMessage::OutParticle(
+                            data.particle,
+                            CompletionChannel::Oneshot(outlet),
+                        ),
+                    });
+                outlet.
             }
             if let Some(event) = self.events.pop_front() {
                 return Poll::Ready(event);
@@ -89,5 +101,3 @@ pub mod sender {
         }
     }
 }
-
-

@@ -22,7 +22,6 @@ console_error_panic_hook = { version = "0.1.7", optional = true }
 wee_alloc = { version = "0.4.2", optional = true }
 cfg-if = "1.0.0"
 particle-protocol = { git = "https://github.com/fluencelabs/rust-peer", branch = "optional-async-std-libp2p" }
-wasm-rs-async-executor = "0.9.0"
 [profile.release]
 lto = true
 opt-level = 'z'
