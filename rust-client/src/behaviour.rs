@@ -91,7 +91,6 @@ pub mod sender {
                             CompletionChannel::Oneshot(outlet),
                         ),
                     });
-                outlet.
             }
             if let Some(event) = self.events.pop_front() {
                 return Poll::Ready(event);

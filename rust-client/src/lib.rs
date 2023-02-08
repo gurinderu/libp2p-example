@@ -45,14 +45,14 @@ pub struct Client {
 
 #[wasm_bindgen]
 impl Client {
-    pub fn send(&mut self, to: String, data: String) -> Result<(), JsValue> {
+    pub async fn send(&mut self, to: String, data: String) -> Result<(), JsValue> {
         info!("Call send for {} {}", data, self.peed_id);
         let mut particle = Particle::default();
         particle.init_peer_id = self.peed_id;
         particle.data = data.into_bytes();
         let to = PeerId::from_str(to.as_str()).expect("Could not parse id");
         let data = ParticleData { to, particle };
-        let _ = self.tx.send(data);
+        let _ = self.tx.send(data).await.expect("OOOPS");
         Ok(())
     }
 }
