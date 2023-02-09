@@ -5,7 +5,7 @@ edition = "2021"
 
 [features]
 wasm = ["console_error_panic_hook", "wee_alloc", "wasi", "wasm-bindgen", "wasm-bindgen-futures", "wasm-logger", "tracing-wasm", "libp2p/wasm-bindgen", "libp2p/wasm-ext", "libp2p/wasm-ext-websocket", "getrandom/js"]
-tokio = ["tokio/sync", "tokio/rt"]
+tokio = ["tokio/full"]
 default = ["wasm"]
 
 [lib]

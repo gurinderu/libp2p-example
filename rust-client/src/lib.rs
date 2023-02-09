@@ -1,11 +1,10 @@
 use std::error::Error;
 use futures::prelude::*;
-use futures::channel::mpsc::Sender;
 use std::str::FromStr;
 use futures::channel::oneshot;
+use futures::channel::mpsc::Sender;
 #[cfg(feature = "wasm")]
 use wasm_bindgen::prelude::*;
-
 use libp2p::PeerId;
 
 use log::info;
@@ -20,8 +19,8 @@ mod wasm;
 
 #[cfg_attr(feature = "wasm", wasm_bindgen)]
 pub struct Client {
-    pub tx: Sender<ParticleData>,
-    pub peed_id: PeerId,
+    tx: Sender<ParticleData>,
+    peed_id: PeerId,
 }
 
 #[cfg_attr(feature = "wasm", wasm_bindgen)]
