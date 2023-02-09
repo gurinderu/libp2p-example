@@ -33,15 +33,15 @@ impl ClientBehaviour {
 
 pub mod sender {
     use futures::channel::mpsc;
-    use futures::channel::oneshot;
     use futures::StreamExt;
     use libp2p::swarm::{
         NetworkBehaviour, NetworkBehaviourAction, NotifyHandler, OneShotHandler, PollParameters,
     };
     use libp2p::PeerId;
-    use particle_protocol::{CompletionChannel, HandlerMessage, ProtocolConfig};
+    use particle_protocol::{CompletionChannel, HandlerMessage, ProtocolConfig, SendStatus};
     use std::collections::VecDeque;
     use std::task::{Context, Poll};
+    use futures::channel::oneshot::Sender;
 
     type SwarmEventType =
         NetworkBehaviourAction<(), OneShotHandler<ProtocolConfig, HandlerMessage, HandlerMessage>>;
@@ -49,6 +49,7 @@ pub mod sender {
     pub struct ParticleData {
         pub to: PeerId,
         pub particle: particle_protocol::Particle,
+        pub outlet: Sender<SendStatus>
     }
 
     pub struct Behaviour {
@@ -81,14 +82,13 @@ pub mod sender {
             _params: &mut impl PollParameters,
         ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ConnectionHandler>> {
             while let Poll::Ready(Some(data)) = self.rx.poll_next_unpin(cx) {
-                let (outlet, _inlet) = oneshot::channel();
                 self.events
                     .push_back(NetworkBehaviourAction::NotifyHandler {
                         peer_id: data.to,
                         handler: NotifyHandler::Any,
                         event: HandlerMessage::OutParticle(
                             data.particle,
-                            CompletionChannel::Oneshot(outlet),
+                            CompletionChannel::Oneshot(data.outlet),
                         ),
                     });
             }

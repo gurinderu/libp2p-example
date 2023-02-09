@@ -1,8 +1,7 @@
-
-
 use futures::prelude::*;
 use futures::channel::mpsc::Sender;
 use std::str::FromStr;
+use futures::channel::oneshot;
 use wasm_bindgen::prelude::*;
 
 use libp2p::PeerId;
@@ -10,10 +9,12 @@ use libp2p::PeerId;
 use log::info;
 use particle_protocol::Particle;
 use crate::behaviour::sender::ParticleData;
+use crate::spawn::spawn_local;
 
 mod behaviour;
 #[cfg(feature = "wasm")]
 mod wasm;
+mod spawn;
 
 #[wasm_bindgen]
 #[derive()]
@@ -30,8 +31,13 @@ impl Client {
         particle.init_peer_id = self.peed_id;
         particle.data = data.into_bytes();
         let to = PeerId::from_str(to.as_str()).expect("Could not parse id");
-        let data = ParticleData { to, particle };
+        let (outlet, inlet) = oneshot::channel();
+        let data = ParticleData { to, particle, outlet };
         let _ = self.tx.send(data).await.expect("OOOPS");
+        spawn_local(async move {
+            let result = inlet.await;
+            log::info!("Send result {:?}", result);
+        });
         Ok(())
     }
 }
