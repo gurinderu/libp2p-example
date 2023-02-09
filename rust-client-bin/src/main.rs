@@ -5,6 +5,7 @@ use futures::StreamExt;
 use libp2p::{identity, mplex, Multiaddr, noise, PeerId, Swarm, tcp, Transport};
 use libp2p::core::transport::upgrade;
 use libp2p::swarm::SwarmEvent;
+use libp2p::tcp::tokio::Tcp;
 use rust_client::behaviour::ClientBehaviour;
 use rust_client::Client;
 use rust_client::spawn::spawn_local;
@@ -12,6 +13,10 @@ use rust_client::spawn::spawn_local;
 #[macro_use]
 extern crate log;
 
+
+fn tcp() -> tcp::Transport<Tcp> {
+    tcp::tokio::Transport::new(tcp::Config::default().nodelay(true))
+}
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let env = Env::default()
@@ -27,7 +32,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
     log::info!("Local peer id: {local_peer_id:?}");
     log::info!("Address: {address:?}");
 
-    let transport = tcp::tokio::Transport::new(tcp::Config::default().nodelay(true))
+
+    let transport = {
+        let mut websocket = libp2p::websocket::WsConfig::new(tcp());
+        websocket.set_tls_config(libp2p::websocket::tls::Config::client());
+        websocket.or_transport(tcp())
+    };
+
+
+    let transport = transport
         .upgrade(upgrade::Version::V1)
         .authenticate(
             noise::NoiseAuthenticated::xx(&local_key)
