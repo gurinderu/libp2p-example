@@ -13,7 +13,7 @@
     async function program() {
         await init();
 
-        let connection = await wasm.connect("/ip4/0.0.0.0/tcp/9999/ws");
+        let connection = await wasm.connect("/ip4/127.0.0.1/tcp/9999/ws");
 
         await connection.send("12D3KooWBznbkBnz3BFP15m1o26VtXmvaQiGwP3Js2a1QuZ5bMiS","123");
     }
