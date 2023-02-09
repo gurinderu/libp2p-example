@@ -1,4 +1,5 @@
 use std::error::Error;
+use env_logger::Env;
 use futures::channel::mpsc;
 use futures::StreamExt;
 use libp2p::{identity, mplex, Multiaddr, noise, PeerId, Swarm, tcp, Transport};
@@ -8,11 +9,18 @@ use rust_client::behaviour::ClientBehaviour;
 use rust_client::Client;
 use rust_client::spawn::spawn_local;
 
+#[macro_use]
+extern crate log;
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let address = "/ip4/127.0.0.1/tcp/9999/ws"; //TODO:
+    let env = Env::default()
+        .filter_or("LOG_LEVEL", "trace")
+        .write_style_or("LOG_STYLE", "always");
 
-    env_logger::init();
+    env_logger::init_from_env(env);
+
+    let address = "/ip4/127.0.0.1/tcp/9999/ws"; //TODO:
     let local_key = identity::Keypair::generate_ed25519();
     let public = local_key.public();
     let local_peer_id = PeerId::from(public.clone());
