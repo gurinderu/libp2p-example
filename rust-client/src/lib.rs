@@ -23,6 +23,15 @@ pub struct Client {
     peed_id: PeerId,
 }
 
+impl Client {
+    pub fn new(peed_id: PeerId, tx: Sender<ParticleData>) -> Self {
+        Client {
+            tx,
+            peed_id,
+        }
+    }
+}
+
 #[cfg_attr(feature = "wasm", wasm_bindgen)]
 pub struct ErrorWrapper {
     #[allow(dead_code)]

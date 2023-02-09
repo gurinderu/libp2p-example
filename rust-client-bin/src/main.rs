@@ -4,9 +4,9 @@ use futures::StreamExt;
 use libp2p::{identity, mplex, Multiaddr, noise, PeerId, Swarm, tcp, Transport};
 use libp2p::core::transport::upgrade;
 use libp2p::swarm::SwarmEvent;
-use tokio::task::spawn_local;
 use rust_client::behaviour::ClientBehaviour;
 use rust_client::Client;
+use rust_client::spawn::spawn_local;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -56,10 +56,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
             }
         }
     });
-    let mut client = Client {
+    let mut client = Client::new(
+        local_peer_id,
         tx,
-        peed_id: local_peer_id,
-    };
+    );
 
     let _res = client.send("12D3KooWBznbkBnz3BFP15m1o26VtXmvaQiGwP3Js2a1QuZ5bMiS".to_owned(), "123".to_owned()).await;
 
