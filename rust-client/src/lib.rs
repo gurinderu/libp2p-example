@@ -2,6 +2,7 @@ use futures::prelude::*;
 use futures::channel::mpsc::Sender;
 use std::str::FromStr;
 use futures::channel::oneshot;
+#[cfg(feature = "wasm")]
 use wasm_bindgen::prelude::*;
 
 use libp2p::PeerId;
@@ -16,14 +17,13 @@ mod behaviour;
 mod wasm;
 mod spawn;
 
-#[wasm_bindgen]
-#[derive()]
+#[cfg_attr(feature = "wasm", wasm_bindgen)]
 pub struct Client {
     tx: Sender<ParticleData>,
     peed_id: PeerId,
 }
 
-#[wasm_bindgen]
+#[cfg_attr(feature = "wasm", wasm_bindgen)]
 impl Client {
     pub async fn send(&mut self, to: String, data: String) -> Result<(), JsValue> {
         info!("Call send for {} {}", data, self.peed_id);
