@@ -1,3 +1,5 @@
+use futures::Future;
+
 #[inline(always)]
 pub(super) fn spawn_local<F>(f: F)
     where

@@ -11,7 +11,6 @@ use crate::Client;
 use wasm_bindgen::prelude::*;
 use std::panic;
 
-
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 

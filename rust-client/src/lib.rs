@@ -13,15 +13,15 @@ use particle_protocol::Particle;
 use crate::behaviour::sender::ParticleData;
 use crate::spawn::spawn_local;
 
-mod behaviour;
+pub mod behaviour;
+pub mod spawn;
 #[cfg(feature = "wasm")]
 mod wasm;
-mod spawn;
 
 #[cfg_attr(feature = "wasm", wasm_bindgen)]
 pub struct Client {
-    tx: Sender<ParticleData>,
-    peed_id: PeerId,
+    pub tx: Sender<ParticleData>,
+    pub peed_id: PeerId,
 }
 
 #[cfg_attr(feature = "wasm", wasm_bindgen)]
