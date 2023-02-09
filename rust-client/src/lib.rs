@@ -1,3 +1,4 @@
+use std::error::Error;
 use futures::prelude::*;
 use futures::channel::mpsc::Sender;
 use std::str::FromStr;
@@ -24,8 +25,22 @@ pub struct Client {
 }
 
 #[cfg_attr(feature = "wasm", wasm_bindgen)]
+pub struct ErrorWrapper {
+    #[allow(dead_code)]
+    underlying: Box<dyn Error>,
+}
+
+impl From<Box<dyn Error>> for ErrorWrapper {
+    fn from(value: Box<dyn Error>) -> Self {
+        ErrorWrapper {
+            underlying: value
+        }
+    }
+}
+
+#[cfg_attr(feature = "wasm", wasm_bindgen)]
 impl Client {
-    pub async fn send(&mut self, to: String, data: String) -> Result<(), JsValue> {
+    pub async fn send(&mut self, to: String, data: String) -> Result<(), ErrorWrapper> {
         info!("Call send for {} {}", data, self.peed_id);
         let mut particle = Particle::default();
         particle.init_peer_id = self.peed_id;
