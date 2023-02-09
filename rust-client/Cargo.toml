@@ -25,7 +25,7 @@ tokio = { version = "1.25.0", optional = true }
 #wasm deps
 wasi = { version = "0.11.0", optional = true }
 wasm-bindgen = { version = "0.2.84", optional = true }
-wasm-bindgen-futures = { version = "0.4.34", optional = true }
+wasm-bindgen-futures = { version = "0.4.34", optional = true, features = ["futures-core"] }
 wasm-logger = { version = "0.2.0", optional = true }
 console_error_panic_hook = { version = "0.1.7", optional = true }
 wee_alloc = { version = "0.4.2", optional = true }

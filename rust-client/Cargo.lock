@@ -3581,6 +3581,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f219e0d211ba40266969f6dbdd90636da12f75bee4fc9d6c23d1260dadb51454"
 dependencies = [
  "cfg-if 1.0.0",
+ "futures-core",
  "js-sys",
  "wasm-bindgen",
  "web-sys",

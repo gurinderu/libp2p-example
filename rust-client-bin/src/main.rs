@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::time::Duration;
 use env_logger::Env;
 use futures::channel::mpsc;
 use futures::StreamExt;
@@ -81,8 +82,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
         local_peer_id,
         tx,
     );
+    tokio::time::sleep(Duration::from_secs(10)).await;
 
     let _res = client.send("12D3KooWBznbkBnz3BFP15m1o26VtXmvaQiGwP3Js2a1QuZ5bMiS".to_owned(), "123".to_owned()).await;
+
+    tokio::time::sleep(Duration::from_secs(3)).await;
 
     Ok(())
 }
