@@ -45,7 +45,6 @@ impl From<Box<dyn Error>> for ErrorWrapper {
         }
     }
 }
-
 #[cfg_attr(feature = "wasm", wasm_bindgen)]
 impl Client {
     pub async fn send(&mut self, to: String, data: String) -> Result<(), ErrorWrapper> {
@@ -57,6 +56,7 @@ impl Client {
         let (outlet, inlet) = oneshot::channel();
         let data = ParticleData { to, particle, outlet };
         let _ = self.tx.send(data).await.expect("OOOPS");
+
         spawn_local(async move {
             let result = inlet.await;
             log::info!("Send result {:?}", result);

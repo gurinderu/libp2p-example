@@ -10,6 +10,7 @@ use crate::behaviour::ClientBehaviour;
 use crate::Client;
 use wasm_bindgen::prelude::*;
 use std::panic;
+use std::sync::Mutex;
 
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
@@ -50,6 +51,8 @@ pub async fn connect(address: &str) -> Result<Client, JsValue> {
     // port.
     let addr: Multiaddr = address.parse().expect("Could not parse address");
     swarm.dial(addr).expect("Could not connect to peer");
+    let (notify, latch) = futures::channel::oneshot::channel();
+    let mutex = Mutex::new(Some(notify));
     spawn_local(async move {
         loop {
             match swarm.select_next_some().await {
@@ -58,7 +61,12 @@ pub async fn connect(address: &str) -> Result<Client, JsValue> {
                     endpoint: _,
                     num_established: _,
                     concurrent_dial_errors: _,
-                } => log::info!("Connection to peer {} established", peer_id),
+                } => {
+                    log::info!("Connection to peer {} established", peer_id);
+                    if let Some(tx) = mutex.lock().unwrap().take() {
+                        tx.send(()).unwrap();
+                    }
+                }
                 SwarmEvent::ConnectionClosed {
                     peer_id,
                     endpoint: _,
@@ -70,6 +78,7 @@ pub async fn connect(address: &str) -> Result<Client, JsValue> {
             }
         }
     });
+    latch.await.expect("Could not await latch");
     Ok(Client {
         tx,
         peed_id: local_peer_id,
